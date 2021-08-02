@@ -10,7 +10,7 @@ Params::Params(std::string pathToInstance, int nbVeh, int seedRNG) : nbVehicles(
 	durationLimit = 1.e30;
 	vehicleCapacity = 1.e30;
 	isRoundingInteger = true;
-	isDurationConstraint = false;
+	isDurationConstraint = true;
 
 	// Initialize RNG
 	srand(seedRNG);					
@@ -22,40 +22,49 @@ Params::Params(std::string pathToInstance, int nbVeh, int seedRNG) : nbVehicles(
 		getline(inputFile, content);
 		getline(inputFile, content);
 		getline(inputFile, content);
-		for (inputFile >> content ; content != "NODE_COORD_SECTION" ; inputFile >> content)
+    std::cout << "- Process header\n";
+		for (inputFile >> content ; content != "NODE_SECTION" ; inputFile >> content)
 		{
 			if (content == "DIMENSION") { inputFile >> content2 >> nbClients; nbClients--; } // Need to substract the depot from the number of nodes
-			else if (content == "EDGE_WEIGHT_TYPE")	inputFile >> content2 >> content3;
 			else if (content == "CAPACITY")	inputFile >> content2 >> vehicleCapacity;
-			else if (content == "DISTANCE") { inputFile >> content2 >> durationLimit; isDurationConstraint = true; }
+			else if (content == "DURATION") { inputFile >> content2 >> durationLimit; isDurationConstraint = true; }
 			else if (content == "SERVICE_TIME")	inputFile >> content2 >> serviceTimeData;
 			else throw std::string("Unexpected data in input file: " + content);
 		}
 		if (nbClients <= 0) throw std::string("Number of nodes is undefined");
 		if (vehicleCapacity == 1.e30) throw std::string("Vehicle capacity is undefined");
-		
-		// Reading client coordinates
+		std::cout << "-- Nr of clients (excluding depot): " << nbClients << "\n";
+
+		// Reading client data
+    std::cout << "- Process node section\n";
 		cli = std::vector<Client>(nbClients + 1);
 		for (int i = 0; i <= nbClients; i++)
 		{
-			inputFile >> cli[i].custNum >> cli[i].coordX >> cli[i].coordY;
+			inputFile >> cli[i].custNum >> cli[i].coordX >> cli[i].coordY >> cli[i].demand >> cli[i].serviceDuration;
 			cli[i].custNum--;
 			cli[i].polarAngle = CircleSector::positive_mod(32768.*atan2(cli[i].coordY - cli[0].coordY, cli[i].coordX - cli[0].coordX) / PI);
+      if (cli[i].demand > maxDemand) maxDemand = cli[i].demand;
+      totalDemand += cli[i].demand;
 		}
 
-		// Reading demand information
+    // Reading travel times
 		inputFile >> content;
-		if (content != "DEMAND_SECTION") throw std::string("Unexpected data in input file: " + content);
-		for (int i = 0; i <= nbClients; i++)
-		{
-			inputFile >> content >> cli[i].demand;
-			cli[i].serviceDuration = (i == 0) ? 0. : serviceTimeData ;
-			if (cli[i].demand > maxDemand) maxDemand = cli[i].demand;
-			totalDemand += cli[i].demand;
-		}
-
+    std::cout << "- Process travel times section\n";
+		if (content != "TRAVEL_TIME_SECTION") throw std::string("Unexpected data in input file: " + content);
+    maxDist = 0.;
+    timeCost = std::vector < std::vector< double > >(nbClients + 1, std::vector <double>(nbClients + 1));
+    std::int32_t i_idx, j_idx;
+    std::double_t ij_time;
+    for (int i = 0; i < ((nbClients+1)*(nbClients+1)); i++)
+    {
+      inputFile >> i_idx >> j_idx >> ij_time;
+      if (ij_time > maxDist) maxDist = ij_time;
+      timeCost[i_idx-1][j_idx-1] = ij_time;
+    }
+    
 		// Reading depot information (in all current instances the depot is represented as node 1, the program will return an error otherwise)
 		inputFile >> content >> content2 >> content3 >> content3;
+    std::cout << "- Process depot section\n";
 		if (content != "DEPOT_SECTION") throw std::string("Unexpected data in input file: " + content);
 		if (content2 != "1") throw std::string("Expected depot index 1 instead of " + content2);
 		if (content3 != "EOF") throw std::string("Unexpected data in input file: " + content3);
@@ -70,21 +79,8 @@ Params::Params(std::string pathToInstance, int nbVeh, int seedRNG) : nbVehicles(
 		std::cout << "----- FLEET SIZE WAS NOT SPECIFIED. DEFAULT INITIALIZATION TO: " << nbVehicles << std::endl;
 	}
 
-	// Calculation of the distance matrix
-	maxDist = 0.;
-	timeCost = std::vector < std::vector< double > >(nbClients + 1, std::vector <double>(nbClients + 1));
-	for (int i = 0; i <= nbClients; i++)
-	{
-		for (int j = 0; j <= nbClients; j++)
-		{
-			double d = std::sqrt((cli[i].coordX - cli[j].coordX)*(cli[i].coordX - cli[j].coordX) + (cli[i].coordY - cli[j].coordY)*(cli[i].coordY - cli[j].coordY));
-			if (isRoundingInteger) { d += 0.5; d = (double)(int)d; } // integer rounding
-			if (d > maxDist) maxDist = d;
-			timeCost[i][j] = d;
-		}
-	}
-
 	// Calculation of the correlated vertices for each customer (for the granular restriction)
+  std::cout << "- Calculate correlated vertices\n";
 	correlatedVertices = std::vector < std::vector < int > >(nbClients + 1);
 	std::vector < std::set < int > > setCorrelatedVertices = std::vector < std::set <int> >(nbClients + 1);
 	std::vector < std::pair <double, int> > orderProximity;
