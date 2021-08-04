@@ -28,12 +28,13 @@ SOFTWARE.*/
 
 struct ClientSplit
 {
-	double demand;
+	double demandBox;
+  double demandWt;
 	double serviceTime;
 	double d0_x;
 	double dx_0;
 	double dnext;
-	ClientSplit() : demand(0.), serviceTime(0.), d0_x(0.), dx_0(0.), dnext(0.) {};
+	ClientSplit() : demandBox(0.), demandWt(0.), serviceTime(0.), d0_x(0.), dx_0(0.), dnext(0.) {};
 };
 
 // Simple Deque which is used for all Linear Split algorithms
@@ -74,7 +75,8 @@ class Split
  std::vector < std::vector < double > > potential;  // Potential vector
  std::vector < std::vector < int > > pred;  // Indice of the predecessor in an optimal path
  std::vector <double> sumDistance; // sumDistance[i] for i > 1 contains the sum of distances : sum_{k=1}^{i-1} d_{k,k+1}
- std::vector <double> sumLoad; // sumLoad[i] for i >= 1 contains the sum of loads : sum_{k=1}^{i} q_k
+ std::vector <double> sumLoadBox; // sumLoadBox[i] for i >= 1 contains the sum of loads (box): sum_{k=1}^{i} q_k
+ std::vector <double> sumLoadWt; // sumLoadWt[i] for i >= 1 contains the sum of loads (weight): sum_{k=1}^{i} q_k
  std::vector <double> sumService; // sumService[i] for i >= 1 contains the sum of service time : sum_{k=1}^{i} s_k
 
  // To be called with i < j only
@@ -82,7 +84,8 @@ class Split
  inline double propagate(int i, int j, int k)
  {
 	 return potential[k][i] + sumDistance[j] - sumDistance[i + 1] + cliSplit[i + 1].d0_x + cliSplit[j].dx_0
-		 + params->penaltyCapacity * std::max<double>(sumLoad[j] - sumLoad[i] - params->vehicleCapacity, 0.);
+		 + params->penaltyCapacityBox * std::max<double>(sumLoadBox[j] - sumLoadBox[i] - params->vehicleCapacityBox, 0.)
+     + params->penaltyCapacityWt * std::max<double>(sumLoadWt[j] - sumLoadWt[i] - params->vehicleCapacityWt, 0.);
  }
 
  // Tests if i dominates j as a predecessor for all nodes x >= j+1
@@ -90,7 +93,8 @@ class Split
  inline bool dominates(int i, int j, int k)
  {
 	 return potential[k][j] + cliSplit[j + 1].d0_x > potential[k][i] + cliSplit[i + 1].d0_x + sumDistance[j + 1] - sumDistance[i + 1]
-		 + params->penaltyCapacity * (sumLoad[j] - sumLoad[i]);
+     + params->penaltyCapacityBox * (sumLoadBox[j] - sumLoadBox[i])
+		 + params->penaltyCapacityWt * (sumLoadWt[j] - sumLoadWt[i]);
  }
 
  // Tests if j dominates i as a predecessor for all nodes x >= j+1

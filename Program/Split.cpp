@@ -3,19 +3,21 @@
 void Split::generalSplit(Individual * indiv, int nbMaxVehicles)
 {
 	// Do not apply Split with fewer vehicles than the trivial (LP) bin packing bound
-	maxVehicles = std::max<int>(nbMaxVehicles, std::ceil(params->totalDemand/params->vehicleCapacity));
+	maxVehicles = std::max<int>(nbMaxVehicles, std::ceil(params->totalDemandBox/params->vehicleCapacityBox));
 
 	// Initialization of the data structures for the linear split algorithms
 	// Direct application of the code located at https://github.com/vidalt/Split-Library
 	for (int i = 1; i <= params->nbClients; i++)
 	{
-		cliSplit[i].demand = params->cli[indiv->chromT[i - 1]].demand;
+		cliSplit[i].demandBox = params->cli[indiv->chromT[i - 1]].demandBox;
+    cliSplit[i].demandWt = params->cli[indiv->chromT[i - 1]].demandWt;
 		cliSplit[i].serviceTime = params->cli[indiv->chromT[i - 1]].serviceDuration;
 		cliSplit[i].d0_x = params->timeCost[0][indiv->chromT[i - 1]];
 		cliSplit[i].dx_0 = params->timeCost[indiv->chromT[i - 1]][0];
 		if (i < params->nbClients) cliSplit[i].dnext = params->timeCost[indiv->chromT[i - 1]][indiv->chromT[i]];
 		else cliSplit[i].dnext = -1.e30;
-		sumLoad[i] = sumLoad[i - 1] + cliSplit[i].demand;
+		sumLoadBox[i] = sumLoadBox[i - 1] + cliSplit[i].demandBox;
+    sumLoadWt[i] = sumLoadWt[i - 1] + cliSplit[i].demandWt;
 		sumService[i] = sumService[i - 1] + cliSplit[i].serviceTime;
 		sumDistance[i] = sumDistance[i - 1] + cliSplit[i - 1].dnext;
 	}
@@ -41,17 +43,20 @@ int Split::splitSimple(Individual * indiv)
 	{
 		for (int i = 0; i < params->nbClients; i++)
 		{
-			double load = 0.;
+			double loadBox = 0.;
+      double loadWt = 0.;
 			double distance = 0.;
 			double serviceDuration = 0.;
-			for (int j = i + 1; j <= params->nbClients && load <= 1.5 * params->vehicleCapacity ; j++)
+			for (int j = i + 1; j <= params->nbClients && loadBox <= 1.5 * params->vehicleCapacityBox ; j++)
 			{
-				load += cliSplit[j].demand;
+				loadBox += cliSplit[j].demandBox;
+        loadWt += cliSplit[j].demandWt;
 				serviceDuration += cliSplit[j].serviceTime;
 				if (j == i + 1) distance += cliSplit[j].d0_x;
 				else distance += cliSplit[j - 1].dnext;
 				double cost = distance + cliSplit[j].dx_0
-					+ params->penaltyCapacity * std::max<double>(load - params->vehicleCapacity, 0.)
+					+ params->penaltyCapacityBox * std::max<double>(loadBox - params->vehicleCapacityBox, 0.)
+          + params->penaltyCapacityWt * std::max<double>(loadWt - params->vehicleCapacityWt, 0.)
 					+ params->penaltyDuration * std::max<double>(distance + cliSplit[j].dx_0 + serviceDuration - params->durationLimit, 0.);
 				if (potential[0][i] + cost < potential[0][j])
 				{
@@ -125,17 +130,20 @@ int Split::splitLF(Individual * indiv)
 		{
 			for (int i = k; i < params->nbClients && potential[k][i] < 1.e29 ; i++)
 			{
-				double load = 0.;
+				double loadBox = 0.;
+        double loadWt = 0.;
 				double serviceDuration = 0.;
 				double distance = 0.;
-				for (int j = i + 1; j <= params->nbClients && load <= 1.5 * params->vehicleCapacity ; j++) // Setting a maximum limit on load infeasibility to accelerate the algorithm
+				for (int j = i + 1; j <= params->nbClients && loadBox <= 1.5 * params->vehicleCapacityBox ; j++) // Setting a maximum limit on load infeasibility to accelerate the algorithm
 				{
-					load += cliSplit[j].demand;
+					loadBox += cliSplit[j].demandBox;
+          loadWt += cliSplit[j].demandWt;
 					serviceDuration += cliSplit[j].serviceTime;
 					if (j == i + 1) distance += cliSplit[j].d0_x;
 					else distance += cliSplit[j - 1].dnext;
 					double cost = distance + cliSplit[j].dx_0
-								+ params->penaltyCapacity * std::max<double>(load - params->vehicleCapacity, 0.)
+								+ params->penaltyCapacityBox * std::max<double>(loadBox - params->vehicleCapacityBox, 0.)
+                + params->penaltyCapacityWt * std::max<double>(loadWt - params->vehicleCapacityWt, 0.)
 								+ params->penaltyDuration * std::max<double>(distance + cliSplit[j].dx_0 + serviceDuration - params->durationLimit, 0.);
 					if (potential[k][i] + cost < potential[k + 1][j])
 					{
@@ -214,7 +222,8 @@ Split::Split(Params * params): params(params)
 	// Structures of the linear Split
 	cliSplit = std::vector <ClientSplit>(params->nbClients + 1);
 	sumDistance = std::vector <double>(params->nbClients + 1,0.);
-	sumLoad = std::vector <double>(params->nbClients + 1,0.);
+	sumLoadBox = std::vector <double>(params->nbClients + 1,0.);
+  sumLoadWt = std::vector <double>(params->nbClients + 1,0.);
 	sumService = std::vector <double>(params->nbClients + 1, 0.);
 	potential = std::vector < std::vector <double> >(params->nbVehicles + 1, std::vector <double>(params->nbClients + 1,1.e30));
 	pred = std::vector < std::vector <int> >(params->nbVehicles + 1, std::vector <int>(params->nbClients + 1,0));
