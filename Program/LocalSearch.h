@@ -36,7 +36,8 @@ struct Route
 	int whenLastTestedSWAPStar;			// "When" the SWAP* moves for this route have been last tested
 	Node * depot;						// Pointer to the associated depot
 	double duration;					// Total time on the route
-	double load;						// Total load on the route
+	double loadBox;						// Total load (box) on the route
+  double loadWt;						// Total load (weight) on the route
 	double reversalDistance;			// Difference of cost if the route is reversed
 	double penalty;						// Current sum of load and duration penalties
 	double polarAngleBarycenter;		// Polar angle of the barycenter of the route
@@ -52,7 +53,8 @@ struct Node
 	Node * next;						// Next node in the route order
 	Node * prev;						// Previous node in the route order
 	Route * route;						// Pointer towards the associated route
-	double cumulatedLoad;				// Cumulated load on this route until the customer (including itself)
+	double cumulatedLoadBox;				// Cumulated load (box) on this route until the customer (including itself)
+  double cumulatedLoadWt;				// Cumulated load (wt) on this route until the customer (including itself)
 	double cumulatedTime;				// Cumulated time on this route until the customer (including itself)
 	double cumulatedReversalDistance;	// Difference of cost if the segment of route (0...cour) is reversed (useful for 2-opt moves with asymmetric problems)
 	double deltaRemoval;				// Difference of cost in the current route if the node is removed (used in SWAP*)
@@ -138,9 +140,9 @@ private:
 	Route * routeV ;
 	int nodeUPrevIndex, nodeUIndex, nodeXIndex, nodeXNextIndex ;	
 	int nodeVPrevIndex, nodeVIndex, nodeYIndex, nodeYNextIndex ;	
-	double loadU, loadX, loadV, loadY;
+	double loadUBox, loadUWt, loadXBox, loadXWt, loadVBox, loadVWt, loadYBox, loadYWt;
 	double serviceU, serviceX, serviceV, serviceY;
-	double penaltyCapacityLS, penaltyDurationLS ;
+	double penaltyCapacityBoxLS, penaltyCapacityWtLS, penaltyDurationLS ;
 
 	void setLocalVariablesRouteU(); // Initializes some local variables and distances associated to routeU to avoid always querying the same values in the distance matrix
 	void setLocalVariablesRouteV(); // Initializes some local variables and distances associated to routeV to avoid always querying the same values in the distance matrix
@@ -149,7 +151,8 @@ private:
 	#define penaltyExcessDuration(x) _penaltyExcessDuration(x)
 	//#define penaltyExcessDuration(x) 0. // <--- Use this line instead of the previous one to save some CPU time if your problem does not include duration constraints
 	inline double _penaltyExcessDuration(double myDuration) {return std::max<double>(0., myDuration - params->durationLimit)*penaltyDurationLS;}
-	inline double penaltyExcessLoad(double myLoad) {return std::max<double>(0., myLoad - params->vehicleCapacity)*penaltyCapacityLS;}
+	inline double penaltyExcessLoadBox(double myLoadBox) {return std::max<double>(0., myLoadBox - params->vehicleCapacityBox)*penaltyCapacityBoxLS;}
+  inline double penaltyExcessLoadWt(double myLoadWt) {return std::max<double>(0., myLoadWt - params->vehicleCapacityWt)*penaltyCapacityWtLS;}
 
 	/* RELOCATE MOVES */
 	// (Legacy notations: move1...move9 from Prins 2004)
@@ -180,7 +183,7 @@ private:
 	public:
 
 	// Run the local search with the specified penalty values
-	void run(Individual * indiv, double penaltyCapacityLS, double penaltyDurationLS);
+	void run(Individual * indiv, double penaltyCapacityBoxLS, double penaltyCapacityWtLS, double penaltyDurationLS);
 
 	// Loading an initial solution into the local search
 	void loadIndividual(Individual * indiv);

@@ -6,11 +6,11 @@ void Population::generatePopulation()
 	{
 		Individual * randomIndiv = new Individual(params);
 		split->generalSplit(randomIndiv, params->nbVehicles);
-		localSearch->run(randomIndiv, params->penaltyCapacity, params->penaltyDuration);
+		localSearch->run(randomIndiv, params->penaltyCapacityBox, params->penaltyCapacityWt, params->penaltyDuration);
 		addIndividual(randomIndiv, true);
 		if (!randomIndiv->isFeasible && std::rand() % 2 == 0)  // Repair half of the solutions in case of infeasibility
 		{
-			localSearch->run(randomIndiv, params->penaltyCapacity*10., params->penaltyDuration*10.);
+			localSearch->run(randomIndiv, params->penaltyCapacityBox*10., params->penaltyCapacityWt*10., params->penaltyDuration*10.);
 			if (randomIndiv->isFeasible) addIndividual(randomIndiv, false);
 		}
 		delete randomIndiv;
@@ -21,9 +21,11 @@ bool Population::addIndividual(const Individual * indiv, bool updateFeasible)
 {
 	if (updateFeasible)
 	{
-		listFeasibilityLoad.push_back(indiv->myCostSol.capacityExcess < MY_EPSILON);
+		listFeasibilityLoadBox.push_back(indiv->myCostSol.capacityExcessBox < MY_EPSILON);
+    listFeasibilityLoadWt.push_back(indiv->myCostSol.capacityExcessWt < MY_EPSILON);
 		listFeasibilityDuration.push_back(indiv->myCostSol.durationExcess < MY_EPSILON);
-		listFeasibilityLoad.pop_front();
+		listFeasibilityLoadBox.pop_front();
+    listFeasibilityLoadWt.pop_front();
 		listFeasibilityDuration.pop_front();
 	}
 
@@ -129,9 +131,14 @@ void Population::restart()
 void Population::managePenalties()
 {
 	// Setting some bounds [0.1,1000] to the penalty values for safety
-	double fractionFeasibleLoad = (double)std::count(listFeasibilityLoad.begin(), listFeasibilityLoad.end(), true) / (double)listFeasibilityLoad.size();
-	if (fractionFeasibleLoad < params->targetFeasible - 0.05 && params->penaltyCapacity < 1000) params->penaltyCapacity = std::min<double>(params->penaltyCapacity * 1.2,1000.);
-	else if (fractionFeasibleLoad > params->targetFeasible + 0.05 && params->penaltyCapacity > 0.1) params->penaltyCapacity = std::max<double>(params->penaltyCapacity * 0.85, 0.1);
+	double fractionFeasibleLoadBox = (double)std::count(listFeasibilityLoadBox.begin(), listFeasibilityLoadBox.end(), true) / (double)listFeasibilityLoadBox.size();
+	if (fractionFeasibleLoadBox < params->targetFeasible - 0.05 && params->penaltyCapacityBox < 1000) params->penaltyCapacityBox = std::min<double>(params->penaltyCapacityBox * 1.2,1000.);
+	else if (fractionFeasibleLoadBox > params->targetFeasible + 0.05 && params->penaltyCapacityBox > 0.1) params->penaltyCapacityBox = std::max<double>(params->penaltyCapacityBox * 0.85, 0.1);
+
+  // Setting some bounds [0.1,1000] to the penalty values for safety
+	double fractionFeasibleLoadWt = (double)std::count(listFeasibilityLoadWt.begin(), listFeasibilityLoadWt.end(), true) / (double)listFeasibilityLoadWt.size();
+	if (fractionFeasibleLoadWt < params->targetFeasible - 0.05 && params->penaltyCapacityWt < 1000) params->penaltyCapacityWt = std::min<double>(params->penaltyCapacityWt * 1.2,1000.);
+	else if (fractionFeasibleLoadWt > params->targetFeasible + 0.05 && params->penaltyCapacityWt > 0.1) params->penaltyCapacityWt = std::max<double>(params->penaltyCapacityWt * 0.85, 0.1);
 
 	// Setting some bounds [0.1,1000] to the penalty values for safety
 	double fractionFeasibleDuration = (double)std::count(listFeasibilityDuration.begin(), listFeasibilityDuration.end(), true) / (double)listFeasibilityDuration.size();
@@ -141,7 +148,8 @@ void Population::managePenalties()
 	// Update the evaluations
 	for (int i = 0; i < (int)infeasibleSubpopulation.size(); i++)
 		infeasibleSubpopulation[i]->myCostSol.penalizedCost = infeasibleSubpopulation[i]->myCostSol.distance
-		+ params->penaltyCapacity * infeasibleSubpopulation[i]->myCostSol.capacityExcess
+		+ params->penaltyCapacityBox * infeasibleSubpopulation[i]->myCostSol.capacityExcessBox
+    + params->penaltyCapacityWt * infeasibleSubpopulation[i]->myCostSol.capacityExcessWt
 		+ params->penaltyDuration * infeasibleSubpopulation[i]->myCostSol.durationExcess;
 
 	// If needed, reorder the individuals in the infeasible subpopulation since the penalty values have changed (simple bubble sort for the sake of simplicity)
@@ -208,8 +216,11 @@ void Population::printState(int nbIter, int nbIterNoImprovement)
 	else std::printf(" | NO-INFEASIBLE");
 
 	std::printf(" | Div %.2f %.2f", getDiversity(feasibleSubpopulation), getDiversity(infeasibleSubpopulation));
-	std::printf(" | Feas %.2f %.2f", (double)std::count(listFeasibilityLoad.begin(), listFeasibilityLoad.end(), true) / (double)listFeasibilityLoad.size(), (double)std::count(listFeasibilityDuration.begin(), listFeasibilityDuration.end(), true) / (double)listFeasibilityDuration.size());
-	std::printf(" | Pen %.2f %.2f", params->penaltyCapacity, params->penaltyDuration);
+	std::printf(" | Feas %.2f %.2f %.2f", 
+    (double)std::count(listFeasibilityLoadBox.begin(), listFeasibilityLoadBox.end(), true) / (double)listFeasibilityLoadBox.size(), 
+    (double)std::count(listFeasibilityLoadWt.begin(), listFeasibilityLoadWt.end(), true) / (double)listFeasibilityLoadWt.size(), 
+    (double)std::count(listFeasibilityDuration.begin(), listFeasibilityDuration.end(), true) / (double)listFeasibilityDuration.size());
+	std::printf(" | Pen %.2f %.2f %.2f", params->penaltyCapacityBox, params->penaltyCapacityWt, params->penaltyDuration);
 	std::cout << std::endl;
 }
 
@@ -253,7 +264,8 @@ void Population::exportSearchProgress(std::string fileName, std::string instance
 
 Population::Population(Params * params, Split * split, LocalSearch * localSearch) : params(params), split(split), localSearch(localSearch)
 {
-	listFeasibilityLoad = std::list<bool>(100, true);
+	listFeasibilityLoadBox = std::list<bool>(100, true);
+  listFeasibilityLoadWt = std::list<bool>(100, true);
 	listFeasibilityDuration = std::list<bool>(100, true);
 	generatePopulation();
 }

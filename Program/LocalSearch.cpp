@@ -1,8 +1,9 @@
 #include "LocalSearch.h" 
 
-void LocalSearch::run(Individual * indiv, double penaltyCapacityLS, double penaltyDurationLS)
+void LocalSearch::run(Individual * indiv, double penaltyCapacityBoxLS, double penaltyCapacityWtLS, double penaltyDurationLS)
 {
-	this->penaltyCapacityLS = penaltyCapacityLS;
+	this->penaltyCapacityBoxLS = penaltyCapacityBoxLS;
+  this->penaltyCapacityWtLS = penaltyCapacityWtLS;
 	this->penaltyDurationLS = penaltyDurationLS;
 	loadIndividual(indiv);
 
@@ -97,9 +98,11 @@ void LocalSearch::setLocalVariablesRouteU()
 	nodeUIndex = nodeU->cour;
 	nodeUPrevIndex = nodeU->prev->cour;
 	nodeXIndex = nodeX->cour;
-	loadU    = params->cli[nodeUIndex].demand;
+	loadUBox    = params->cli[nodeUIndex].demandBox;
+  loadUWt    = params->cli[nodeUIndex].demandWt;
 	serviceU = params->cli[nodeUIndex].serviceDuration;
-	loadX	 = params->cli[nodeXIndex].demand;
+	loadXBox	 = params->cli[nodeXIndex].demandBox;
+  loadXWt	 = params->cli[nodeXIndex].demandWt;
 	serviceX = params->cli[nodeXIndex].serviceDuration;
 }
 
@@ -111,9 +114,11 @@ void LocalSearch::setLocalVariablesRouteV()
 	nodeVIndex = nodeV->cour;
 	nodeVPrevIndex = nodeV->prev->cour;
 	nodeYIndex = nodeY->cour;
-	loadV    = params->cli[nodeVIndex].demand;
+	loadVBox    = params->cli[nodeVIndex].demandBox;
+  loadVWt    = params->cli[nodeVIndex].demandWt;
 	serviceV = params->cli[nodeVIndex].serviceDuration;
-	loadY	 = params->cli[nodeYIndex].demand;
+	loadYBox	 = params->cli[nodeYIndex].demandBox;
+  loadYWt	 = params->cli[nodeYIndex].demandWt;
 	serviceY = params->cli[nodeYIndex].serviceDuration;
 }
 
@@ -125,11 +130,13 @@ bool LocalSearch::move1()
 	if (routeU != routeV)
 	{
 		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - serviceU)
-			+ penaltyExcessLoad(routeU->load - loadU)
+			+ penaltyExcessLoadBox(routeU->loadBox - loadUBox)
+      + penaltyExcessLoadWt(routeU->loadWt - loadUWt) 
 			- routeU->penalty;
 
 		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + serviceU)
-			+ penaltyExcessLoad(routeV->load + loadU)
+			+ penaltyExcessLoadBox(routeV->loadBox + loadUBox)
+      + penaltyExcessLoadWt(routeV->loadWt + loadUWt)
 			- routeV->penalty;
 	}
 
@@ -152,11 +159,13 @@ bool LocalSearch::move2()
 	if (routeU != routeV)
 	{
 		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - params->timeCost[nodeUIndex][nodeXIndex] - serviceU - serviceX)
-			+ penaltyExcessLoad(routeU->load - loadU - loadX)
+			+ penaltyExcessLoadBox(routeU->loadBox - loadUBox - loadXBox)
+      + penaltyExcessLoadWt(routeU->loadWt - loadUWt - loadXWt)
 			- routeU->penalty;
 
 		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + params->timeCost[nodeUIndex][nodeXIndex] + serviceU + serviceX)
-			+ penaltyExcessLoad(routeV->load + loadU + loadX)
+			+ penaltyExcessLoadBox(routeV->loadBox + loadUBox + loadXBox)
+      + penaltyExcessLoadWt(routeV->loadWt + loadUWt + loadXWt)
 			- routeV->penalty;
 	}
 
@@ -180,11 +189,13 @@ bool LocalSearch::move3()
 	if (routeU != routeV)
 	{
 		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - serviceU - serviceX)
-			+ penaltyExcessLoad(routeU->load - loadU - loadX)
+			+ penaltyExcessLoadBox(routeU->loadBox - loadUBox - loadXBox)
+      + penaltyExcessLoadWt(routeU->loadWt - loadUWt - loadXWt)
 			- routeU->penalty;
 
 		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + serviceU + serviceX)
-			+ penaltyExcessLoad(routeV->load + loadU + loadX)
+			+ penaltyExcessLoadBox(routeV->loadBox + loadUBox + loadXBox)
+      + penaltyExcessLoadWt(routeV->loadWt + loadUWt + loadXWt)
 			- routeV->penalty;
 	}
 
@@ -208,11 +219,13 @@ bool LocalSearch::move4()
 	if (routeU != routeV)
 	{
 		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU + serviceV - serviceU)
-			+ penaltyExcessLoad(routeU->load + loadV - loadU)
+			+ penaltyExcessLoadBox(routeU->loadBox + loadVBox - loadUBox)
+      + penaltyExcessLoadWt(routeU->loadWt + loadVWt - loadUWt)
 			- routeU->penalty;
 
 		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV - serviceV + serviceU)
-			+ penaltyExcessLoad(routeV->load + loadU - loadV)
+			+ penaltyExcessLoadBox(routeV->loadBox + loadUBox - loadVBox)
+      + penaltyExcessLoadWt(routeV->loadWt + loadUWt - loadVWt)
 			- routeV->penalty;
 	}
 
@@ -235,11 +248,13 @@ bool LocalSearch::move5()
 	if (routeU != routeV)
 	{
 		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - params->timeCost[nodeUIndex][nodeXIndex] + serviceV - serviceU - serviceX)
-			+ penaltyExcessLoad(routeU->load + loadV - loadU - loadX)
+			+ penaltyExcessLoadBox(routeU->loadBox + loadVBox - loadUBox - loadXBox)
+      + penaltyExcessLoadWt(routeU->loadWt + loadVWt - loadUWt - loadXWt)
 			- routeU->penalty;
 
 		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + params->timeCost[nodeUIndex][nodeXIndex] - serviceV + serviceU + serviceX)
-			+ penaltyExcessLoad(routeV->load + loadU + loadX - loadV)
+			+ penaltyExcessLoadBox(routeV->loadBox + loadUBox + loadXBox - loadVBox)
+      + penaltyExcessLoadWt(routeV->loadWt + loadUWt + loadXWt - loadVWt)
 			- routeV->penalty;
 	}
 
@@ -263,11 +278,13 @@ bool LocalSearch::move6()
 	if (routeU != routeV)
 	{
 		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - params->timeCost[nodeUIndex][nodeXIndex] + params->timeCost[nodeVIndex][nodeYIndex] + serviceV + serviceY - serviceU - serviceX)
-			+ penaltyExcessLoad(routeU->load + loadV + loadY - loadU - loadX)
+			+ penaltyExcessLoadBox(routeU->loadBox + loadVBox + loadYBox - loadUBox - loadXBox)
+      + penaltyExcessLoadWt(routeU->loadWt + loadVWt + loadYWt - loadUWt - loadXWt)
 			- routeU->penalty;
 
 		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + params->timeCost[nodeUIndex][nodeXIndex] - params->timeCost[nodeVIndex][nodeYIndex] - serviceV - serviceY + serviceU + serviceX)
-			+ penaltyExcessLoad(routeV->load + loadU + loadX - loadV - loadY)
+			+ penaltyExcessLoadBox(routeV->loadBox + loadUBox + loadXBox - loadVBox - loadYBox)
+      + penaltyExcessLoadWt(routeV->loadWt + loadUWt + loadXWt - loadVWt - loadYWt)
 			- routeV->penalty;
 	}
 
@@ -320,8 +337,10 @@ bool LocalSearch::move8()
 	double cost = params->timeCost[nodeUIndex][nodeVIndex] + params->timeCost[nodeXIndex][nodeYIndex] - params->timeCost[nodeUIndex][nodeXIndex] - params->timeCost[nodeVIndex][nodeYIndex]
 		+ penaltyExcessDuration(nodeU->cumulatedTime + nodeV->cumulatedTime + nodeV->cumulatedReversalDistance + params->timeCost[nodeUIndex][nodeVIndex])
 		+ penaltyExcessDuration(routeU->duration - nodeU->cumulatedTime - params->timeCost[nodeUIndex][nodeXIndex] + routeU->reversalDistance - nodeX->cumulatedReversalDistance + routeV->duration - nodeV->cumulatedTime - params->timeCost[nodeVIndex][nodeYIndex] + params->timeCost[nodeXIndex][nodeYIndex])
-		+ penaltyExcessLoad(nodeU->cumulatedLoad + nodeV->cumulatedLoad)
-		+ penaltyExcessLoad(routeU->load + routeV->load - nodeU->cumulatedLoad - nodeV->cumulatedLoad)
+		+ penaltyExcessLoadBox(nodeU->cumulatedLoadBox + nodeV->cumulatedLoadBox)
+    + penaltyExcessLoadWt(nodeU->cumulatedLoadWt + nodeV->cumulatedLoadWt)
+		+ penaltyExcessLoadBox(routeU->loadBox + routeV->loadBox - nodeU->cumulatedLoadBox - nodeV->cumulatedLoadBox)
+    + penaltyExcessLoadWt(routeU->loadWt + routeV->loadWt - nodeU->cumulatedLoadWt - nodeV->cumulatedLoadWt)
 		- routeU->penalty - routeV->penalty
 		+ nodeV->cumulatedReversalDistance + routeU->reversalDistance - nodeX->cumulatedReversalDistance;
 
@@ -396,8 +415,10 @@ bool LocalSearch::move9()
 	double cost = params->timeCost[nodeUIndex][nodeYIndex] + params->timeCost[nodeVIndex][nodeXIndex] - params->timeCost[nodeUIndex][nodeXIndex] - params->timeCost[nodeVIndex][nodeYIndex]
 		+ penaltyExcessDuration(nodeU->cumulatedTime + routeV->duration - nodeV->cumulatedTime - params->timeCost[nodeVIndex][nodeYIndex] + params->timeCost[nodeUIndex][nodeYIndex])
 		+ penaltyExcessDuration(routeU->duration - nodeU->cumulatedTime - params->timeCost[nodeUIndex][nodeXIndex] + nodeV->cumulatedTime + params->timeCost[nodeVIndex][nodeXIndex])
-		+ penaltyExcessLoad(nodeU->cumulatedLoad + routeV->load - nodeV->cumulatedLoad)
-		+ penaltyExcessLoad(nodeV->cumulatedLoad + routeU->load - nodeU->cumulatedLoad)
+		+ penaltyExcessLoadBox(nodeU->cumulatedLoadBox + routeV->loadBox - nodeV->cumulatedLoadBox)
+    + penaltyExcessLoadWt(nodeU->cumulatedLoadWt + routeV->loadWt - nodeV->cumulatedLoadWt)
+		+ penaltyExcessLoadBox(nodeV->cumulatedLoadBox + routeU->loadBox - nodeU->cumulatedLoadBox)
+    + penaltyExcessLoadWt(nodeV->cumulatedLoadWt + routeU->loadWt - nodeU->cumulatedLoadWt)
 		- routeU->penalty - routeV->penalty;
 
 	if (cost > -MY_EPSILON) return false;
@@ -462,8 +483,10 @@ bool LocalSearch::swapStar()
 	{
 		for (nodeV = routeV->depot->next; !nodeV->isDepot; nodeV = nodeV->next)
 		{
-			double deltaPenRouteU = penaltyExcessLoad(routeU->load + params->cli[nodeV->cour].demand - params->cli[nodeU->cour].demand) - routeU->penalty;
-			double deltaPenRouteV = penaltyExcessLoad(routeV->load + params->cli[nodeU->cour].demand - params->cli[nodeV->cour].demand) - routeV->penalty;
+			double deltaPenRouteU = penaltyExcessLoadBox(routeU->loadBox + params->cli[nodeV->cour].demandBox - params->cli[nodeU->cour].demandBox)
+        + penaltyExcessLoadWt(routeU->loadWt + params->cli[nodeV->cour].demandWt - params->cli[nodeU->cour].demandWt) - routeU->penalty;
+			double deltaPenRouteV = penaltyExcessLoadBox(routeV->loadBox + params->cli[nodeU->cour].demandBox - params->cli[nodeV->cour].demandBox)
+        + penaltyExcessLoadWt(routeV->loadWt + params->cli[nodeU->cour].demandWt - params->cli[nodeV->cour].demandWt) - routeV->penalty;
 
 			// Quick filter: possibly early elimination of many SWAP* due to the capacity constraints/penalties and bounds on insertion costs
 			if (deltaPenRouteU + nodeU->deltaRemoval + deltaPenRouteV + nodeV->deltaRemoval <= 0)
@@ -499,8 +522,10 @@ bool LocalSearch::swapStar()
 		double deltaDistRouteU = params->timeCost[nodeU->prev->cour][nodeU->next->cour] - params->timeCost[nodeU->prev->cour][nodeU->cour] - params->timeCost[nodeU->cour][nodeU->next->cour];
 		double deltaDistRouteV = bestInsertClient[routeV->cour][nodeU->cour].bestCost[0];
 		mySwapStar.moveCost = deltaDistRouteU + deltaDistRouteV
-			+ penaltyExcessLoad(routeU->load - params->cli[nodeU->cour].demand) - routeU->penalty
-			+ penaltyExcessLoad(routeV->load + params->cli[nodeU->cour].demand) - routeV->penalty
+			+ penaltyExcessLoadBox(routeU->loadBox - params->cli[nodeU->cour].demandBox)
+      + penaltyExcessLoadWt(routeU->loadWt - params->cli[nodeU->cour].demandWt) - routeU->penalty
+			+ penaltyExcessLoadBox(routeV->loadBox + params->cli[nodeU->cour].demandBox)
+      + penaltyExcessLoadWt(routeV->loadWt + params->cli[nodeU->cour].demandWt) - routeV->penalty
 			+ penaltyExcessDuration(routeU->duration + deltaDistRouteU - params->cli[nodeU->cour].serviceDuration)
 			+ penaltyExcessDuration(routeV->duration + deltaDistRouteV + params->cli[nodeU->cour].serviceDuration);
 
@@ -517,8 +542,10 @@ bool LocalSearch::swapStar()
 		double deltaDistRouteU = bestInsertClient[routeU->cour][nodeV->cour].bestCost[0];
 		double deltaDistRouteV = params->timeCost[nodeV->prev->cour][nodeV->next->cour] - params->timeCost[nodeV->prev->cour][nodeV->cour] - params->timeCost[nodeV->cour][nodeV->next->cour];
 		mySwapStar.moveCost = deltaDistRouteU + deltaDistRouteV
-			+ penaltyExcessLoad(routeU->load + params->cli[nodeV->cour].demand) - routeU->penalty
-			+ penaltyExcessLoad(routeV->load - params->cli[nodeV->cour].demand) - routeV->penalty
+      + penaltyExcessLoadBox(routeU->loadBox + params->cli[nodeV->cour].demandBox)
+			+ penaltyExcessLoadWt(routeU->loadWt + params->cli[nodeV->cour].demandWt) - routeU->penalty
+      + penaltyExcessLoadBox(routeV->loadBox - params->cli[nodeV->cour].demandBox)
+			+ penaltyExcessLoadWt(routeV->loadWt - params->cli[nodeV->cour].demandWt) - routeV->penalty
 			+ penaltyExcessDuration(routeU->duration + deltaDistRouteU + params->cli[nodeV->cour].serviceDuration)
 			+ penaltyExcessDuration(routeV->duration + deltaDistRouteV - params->cli[nodeV->cour].serviceDuration);
 
@@ -629,7 +656,8 @@ void LocalSearch::swapNode(Node * U, Node * V)
 void LocalSearch::updateRouteData(Route * myRoute)
 {
 	int myplace = 0;
-	double myload = 0.;
+	double myloadBox = 0.;
+  double myloadWt = 0.;
 	double mytime = 0.;
 	double myReversalDistance = 0.;
 	double cumulatedX = 0.;
@@ -637,7 +665,8 @@ void LocalSearch::updateRouteData(Route * myRoute)
 
 	Node * mynode = myRoute->depot;
 	mynode->position = 0;
-	mynode->cumulatedLoad = 0.;
+	mynode->cumulatedLoadBox = 0.;
+  mynode->cumulatedLoadWt = 0.;
 	mynode->cumulatedTime = 0.;
 	mynode->cumulatedReversalDistance = 0.;
 
@@ -647,10 +676,12 @@ void LocalSearch::updateRouteData(Route * myRoute)
 		mynode = mynode->next;
 		myplace++;
 		mynode->position = myplace;
-		myload += params->cli[mynode->cour].demand;
+		myloadBox += params->cli[mynode->cour].demandBox;
+    myloadWt += params->cli[mynode->cour].demandWt;
 		mytime += params->timeCost[mynode->prev->cour][mynode->cour] + params->cli[mynode->cour].serviceDuration;
 		myReversalDistance += params->timeCost[mynode->cour][mynode->prev->cour] - params->timeCost[mynode->prev->cour][mynode->cour] ;
-		mynode->cumulatedLoad = myload;
+		mynode->cumulatedLoadBox = myloadBox;
+    mynode->cumulatedLoadWt = myloadWt;
 		mynode->cumulatedTime = mytime;
 		mynode->cumulatedReversalDistance = myReversalDistance;
 		if (!mynode->isDepot)
@@ -664,8 +695,9 @@ void LocalSearch::updateRouteData(Route * myRoute)
 	}
 
 	myRoute->duration = mytime;
-	myRoute->load = myload;
-	myRoute->penalty = penaltyExcessDuration(mytime) + penaltyExcessLoad(myload);
+	myRoute->loadBox = myloadBox;
+  myRoute->loadWt = myloadWt;
+	myRoute->penalty = penaltyExcessDuration(mytime) + penaltyExcessLoadBox(myloadBox) + penaltyExcessLoadWt(myloadWt);
 	myRoute->nbCustomers = myplace-1;
 	myRoute->reversalDistance = myReversalDistance;
 	// Remember "when" this route has been last modified (will be used to filter unnecessary move evaluations)

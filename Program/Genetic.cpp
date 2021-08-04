@@ -9,11 +9,11 @@ void Genetic::run(int maxIterNonProd, int timeLimit)
 		crossoverOX(offspring, population->getBinaryTournament(),population->getBinaryTournament());
 
 		/* LOCAL SEARCH */
-		localSearch->run(offspring, params->penaltyCapacity, params->penaltyDuration);
+		localSearch->run(offspring, params->penaltyCapacityBox, params->penaltyCapacityWt, params->penaltyDuration);
 		bool isNewBest = population->addIndividual(offspring,true);
 		if (!offspring->isFeasible && std::rand()%2 == 0) // Repair half of the solutions in case of infeasibility
 		{
-			localSearch->run(offspring, params->penaltyCapacity*10., params->penaltyDuration*10.);
+			localSearch->run(offspring, params->penaltyCapacityBox*10., params->penaltyCapacityWt*10., params->penaltyDuration*10.);
 			if (offspring->isFeasible) isNewBest = (population->addIndividual(offspring,false) || isNewBest);
 		}
 

@@ -5,10 +5,13 @@ Params::Params(std::string pathToInstance, int nbVeh, int seedRNG) : nbVehicles(
 	std::string content, content2, content3;
 	double serviceTimeData = 0.;
 	nbClients = 0;
-	totalDemand = 0.;
-	maxDemand = 0.;
+	totalDemandBox = 0.;
+  totalDemandWt = 0.;
+	maxDemandBox = 0.;
+  maxDemandWt = 0.;
 	durationLimit = 1.e30;
-	vehicleCapacity = 1.e30;
+	vehicleCapacityBox = 1.e30;
+  vehicleCapacityWt = 1.e30;
 	isRoundingInteger = true;
 	isDurationConstraint = true;
 
@@ -26,13 +29,14 @@ Params::Params(std::string pathToInstance, int nbVeh, int seedRNG) : nbVehicles(
 		for (inputFile >> content ; content != "NODE_SECTION" ; inputFile >> content)
 		{
 			if (content == "DIMENSION") { inputFile >> content2 >> nbClients; nbClients--; } // Need to substract the depot from the number of nodes
-			else if (content == "CAPACITY")	inputFile >> content2 >> vehicleCapacity;
+			else if (content == "CAPACITY")	inputFile >> content2 >> vehicleCapacityBox >> vehicleCapacityWt;
 			else if (content == "DURATION") { inputFile >> content2 >> durationLimit; isDurationConstraint = true; }
 			else if (content == "SERVICE_TIME")	inputFile >> content2 >> serviceTimeData;
 			else throw std::string("Unexpected data in input file: " + content);
 		}
 		if (nbClients <= 0) throw std::string("Number of nodes is undefined");
-		if (vehicleCapacity == 1.e30) throw std::string("Vehicle capacity is undefined");
+		if (vehicleCapacityBox == 1.e30) throw std::string("Vehicle capacity (box) is undefined");
+    if (vehicleCapacityWt == 1.e30) throw std::string("Vehicle capacity (weight) is undefined");
 		std::cout << "-- Nr of clients (excluding depot): " << nbClients << "\n";
 
 		// Reading client data
@@ -40,11 +44,13 @@ Params::Params(std::string pathToInstance, int nbVeh, int seedRNG) : nbVehicles(
 		cli = std::vector<Client>(nbClients + 1);
 		for (int i = 0; i <= nbClients; i++)
 		{
-			inputFile >> cli[i].custNum >> cli[i].coordX >> cli[i].coordY >> cli[i].demand >> cli[i].serviceDuration;
+			inputFile >> cli[i].custNum >> cli[i].coordX >> cli[i].coordY >> cli[i].demandBox >> cli[i].demandWt >> cli[i].serviceDuration;
 			cli[i].custNum--;
 			cli[i].polarAngle = CircleSector::positive_mod(32768.*atan2(cli[i].coordY - cli[0].coordY, cli[i].coordX - cli[0].coordX) / PI);
-      if (cli[i].demand > maxDemand) maxDemand = cli[i].demand;
-      totalDemand += cli[i].demand;
+      if (cli[i].demandBox > maxDemandBox) maxDemandBox = cli[i].demandBox;
+      if (cli[i].demandWt > maxDemandWt) maxDemandWt = cli[i].demandWt;
+      totalDemandBox += cli[i].demandBox;
+      totalDemandWt += cli[i].demandWt;
 		}
 
     // Reading travel times
@@ -75,7 +81,7 @@ Params::Params(std::string pathToInstance, int nbVeh, int seedRNG) : nbVehicles(
 	// Default initialization if the number of vehicles has not been provided by the user
 	if (nbVehicles == INT_MAX)
 	{
-		nbVehicles = std::ceil(1.2*totalDemand/vehicleCapacity) + 2;  // Safety margin: 20% + 2 more vehicles than the trivial bin packing LB
+		nbVehicles = std::ceil(1.2*totalDemandBox/vehicleCapacityBox) + 2;  // Safety margin: 20% + 2 more vehicles than the trivial bin packing LB
 		std::cout << "----- FLEET SIZE WAS NOT SPECIFIED. DEFAULT INITIALIZATION TO: " << nbVehicles << std::endl;
 	}
 
@@ -106,9 +112,10 @@ Params::Params(std::string pathToInstance, int nbVeh, int seedRNG) : nbVehicles(
 
 	// Safeguards to avoid possible numerical instability in case of instances containing arbitrarily small or large numerical values
 	if (maxDist < 0.1 || maxDist > 100000)   throw std::string("ERROR: The distances are of very small or large scale. This could impact numerical stability. Please rescale the dataset and run again.");
-	if (maxDemand < 0.1 || maxDemand > 100000) throw std::string("ERROR: The demand quantities are of very small or large scale. This could impact numerical stability. Please rescale the dataset and run again.");
+	if (maxDemandBox < 0.1 || maxDemandBox > 100000 || maxDemandWt < 0.1 || maxDemandWt > 100000) throw std::string("ERROR: The demand quantities are of very small or large scale. This could impact numerical stability. Please rescale the dataset and run again.");
 
 	// A reasonable scale for the initial values of the penalties
 	penaltyDuration = 1;
-	penaltyCapacity = std::max<double>(0.1, std::min<double>(1000., maxDist / maxDemand));
+	penaltyCapacityBox = std::max<double>(0.1, std::min<double>(1000., maxDist / maxDemandBox));
+  penaltyCapacityWt = std::max<double>(0.1, std::min<double>(1000., maxDist / maxDemandWt));
 }

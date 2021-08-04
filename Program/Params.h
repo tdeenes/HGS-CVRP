@@ -45,7 +45,8 @@ struct Client
 	double coordX;			// Coordinate X
 	double coordY;			// Coordinate Y
 	double serviceDuration; // Service duration
-	double demand;			// Demand
+	double demandBox;			// Demand (box)
+  double demandWt;			// Demand (wt)
 	int polarAngle;			// Polar angle of the client around the depot, measured in degrees and truncated for convenience
 };
 
@@ -62,7 +63,8 @@ public:
 	double targetFeasible   = 0.2;		// Reference proportion for the number of feasible individuals, used for the adaptation of the penalty parameters
 	
 	/* ADAPTIVE PENALTY COEFFICIENTS */
-	double penaltyCapacity;				// Penalty for one unit of capacity excess (adapted through the search)
+	double penaltyCapacityBox;				// Penalty for one unit of box capacity excess (adapted through the search)
+  double penaltyCapacityWt;				// Penalty for one unit of weight capacity excess (adapted through the search)
 	double penaltyDuration;				// Penalty for one unit of duration excess (adapted through the search)
 
 	/* DATA OF THE PROBLEM INSTANCE */			
@@ -71,9 +73,12 @@ public:
 	int nbClients ;											// Number of clients (excluding the depot)
 	int nbVehicles ;										// Number of vehicles
 	double durationLimit;									// Route duration limit
-	double vehicleCapacity;									// Capacity limit
-	double totalDemand ;									// Total demand required by the clients
-	double maxDemand;										// Maximum demand of a client
+	double vehicleCapacityBox;									// Capacity limit (box)
+  double vehicleCapacityWt;									// Capacity limit (weight)
+	double totalDemandBox ;									// Total demand required by the clients (boxes)
+  double totalDemandWt ;									// Total demand required by the clients (weight)
+	double maxDemandBox;										// Maximum demand of a client (boxes)
+  double maxDemandWt;										// Maximum demand of a client (weight)
 	double maxDist;											// Maximum distance between two clients
 	std::vector < Client > cli ;							// Vector containing information on each client
 	std::vector < std::vector < double > > timeCost ;		// Distance matrix

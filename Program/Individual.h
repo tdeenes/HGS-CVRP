@@ -32,9 +32,10 @@ struct CostSol
 	double penalizedCost;		// Penalized cost of the solution
 	int nbRoutes;				// Number of routes
 	double distance;			// Total Distance
-	double capacityExcess;		// Sum of excess load in all routes
+	double capacityExcessBox;		// Sum of excess load in all routes
+  double capacityExcessWt;		// Sum of excess load in all routes
 	double durationExcess;		// Sum of excess duration in all routes
-	CostSol() { penalizedCost = 0.; nbRoutes = 0; distance = 0.; capacityExcess = 0.; durationExcess = 0.; }
+	CostSol() { penalizedCost = 0.; nbRoutes = 0; distance = 0.; capacityExcessBox = 0.; capacityExcessWt = 0.; durationExcess = 0.; }
 };
 
 class Individual

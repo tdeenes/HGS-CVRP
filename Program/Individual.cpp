@@ -8,13 +8,15 @@ void Individual::evaluateCompleteCost()
 		if (!chromR[r].empty())
 		{
 			double distance = params->timeCost[0][chromR[r][0]];
-			double load = params->cli[chromR[r][0]].demand;
+			double loadBox = params->cli[chromR[r][0]].demandBox;
+      double loadWt = params->cli[chromR[r][0]].demandWt;
 			double service = params->cli[chromR[r][0]].serviceDuration;
 			predecessors[chromR[r][0]] = 0;
 			for (int i = 1; i < (int)chromR[r].size(); i++)
 			{
 				distance += params->timeCost[chromR[r][i-1]][chromR[r][i]];
-				load += params->cli[chromR[r][i]].demand;
+				loadBox += params->cli[chromR[r][i]].demandBox;
+        loadWt += params->cli[chromR[r][i]].demandWt;
 				service += params->cli[chromR[r][i]].serviceDuration;
 				predecessors[chromR[r][i]] = chromR[r][i-1];
 				successors[chromR[r][i-1]] = chromR[r][i];
@@ -23,13 +25,14 @@ void Individual::evaluateCompleteCost()
 			distance += params->timeCost[chromR[r][chromR[r].size()-1]][0];
 			myCostSol.distance += distance;
 			myCostSol.nbRoutes++;
-			if (load > params->vehicleCapacity) myCostSol.capacityExcess += load - params->vehicleCapacity;
+			if (loadBox > params->vehicleCapacityBox) myCostSol.capacityExcessBox += loadBox - params->vehicleCapacityBox;
+      if (loadWt > params->vehicleCapacityWt) myCostSol.capacityExcessWt += loadWt - params->vehicleCapacityWt;
 			if (distance + service > params->durationLimit) myCostSol.durationExcess += distance + service - params->durationLimit;
 		}
 	}
 
-	myCostSol.penalizedCost = myCostSol.distance + myCostSol.capacityExcess*params->penaltyCapacity + myCostSol.durationExcess*params->penaltyDuration;
-	isFeasible = (myCostSol.capacityExcess < MY_EPSILON && myCostSol.durationExcess < MY_EPSILON);
+	myCostSol.penalizedCost = myCostSol.distance + myCostSol.capacityExcessBox*params->penaltyCapacityBox + myCostSol.capacityExcessWt*params->penaltyCapacityWt + myCostSol.durationExcess*params->penaltyDuration;
+	isFeasible = (myCostSol.capacityExcessBox < MY_EPSILON && myCostSol.capacityExcessWt < MY_EPSILON && myCostSol.durationExcess < MY_EPSILON);
 }
 
 void Individual::removeProximity(Individual * indiv)
