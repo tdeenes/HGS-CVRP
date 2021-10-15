@@ -262,6 +262,18 @@ void Population::exportSearchProgress(std::string fileName, std::string instance
 		myfile << instanceName << ";" << seedRNG << ";" << state.second << ";" << (double)state.first / (double)CLOCKS_PER_SEC << std::endl;
 }
 
+void Population::exportGiantTour(std::string fileName)
+{
+	std::cout << "----- EXPORTING FEASIBLE GIANT TOURS (" << feasibleSubpopulation.size() << ") INTO: " << fileName << std::endl;
+	std::ofstream popFile;
+	popFile.open(fileName, std::ios::app);
+	for (Individual * indiv : feasibleSubpopulation) 
+	{
+		indiv->exportGiantTour(popFile);
+	};
+	popFile.close();
+}
+
 Population::Population(Params * params, Split * split, LocalSearch * localSearch) : params(params), split(split), localSearch(localSearch)
 {
 	listFeasibilityLoadBox = std::list<bool>(100, true);

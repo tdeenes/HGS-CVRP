@@ -64,6 +64,9 @@ public:
   // Returns the average distance of this individual with the nbClosest individuals
   double averageBrokenPairsDistanceClosest(int nbClosest) ;
 
+  // Exports the sequence of clients
+  void exportGiantTour(std::ofstream &stream);
+
   // Exports a solution in CVRPLib format (adds a final line with the computational time)
   void exportCVRPLibFormat(std::string fileName);
 

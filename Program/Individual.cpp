@@ -66,6 +66,16 @@ double Individual::averageBrokenPairsDistanceClosest(int nbClosest)
 	return result/(double)maxSize ;
 }
 
+void Individual::exportGiantTour(std::ofstream &stream)
+{
+	if (stream.is_open())
+	{
+		for (int i : chromT) stream << " " << i;
+		stream << std::endl;
+	}
+	else std::cout << "----- STREAM IS NOT OPEN " << std::endl;
+}
+
 void Individual::exportCVRPLibFormat(std::string fileName)
 {
 	std::cout << "----- WRITING SOLUTION WITH VALUE " << myCostSol.penalizedCost << " IN : " << fileName << std::endl;

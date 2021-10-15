@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 			population.getBestFound()->exportCVRPLibFormat(commandline.pathSolution);
 			population.exportSearchProgress(commandline.pathSolution + ".PG.csv", commandline.pathInstance, commandline.seed);
 			if (commandline.pathBKS != "") population.exportBKS(commandline.pathBKS);
+			if (commandline.pathGiantTour != "") population.exportGiantTour(commandline.pathGiantTour);
 		}
 	}
 	catch (const string& e) { std::cout << "EXCEPTION | " << e << std::endl; }
